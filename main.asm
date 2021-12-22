@@ -122,6 +122,10 @@ dmaEnd:
     ld a, $8F   ;flip flop between $8F and $98 with xor %00010111
     ld [$C011], a
 
+    ;dino animation delay var
+    ld a, 25
+    ld [$C012], a
+
     ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
     ;WRA1 = Work RAm 1 starts at $D000
     ;I'm just clearing the WRAM so I can see changes easier in the debugger
@@ -455,6 +459,15 @@ Dropper:
   ld a, [$D000]
   cp a, 104
   jr c, .regDinolegs  ;dino y < 104
+
+    ld a, [$C012]  ;dino animation delay
+    dec a
+    ld [$C012], a
+    cp a, 0
+    jr nz, .dinoUpdate  ;dino y < 104
+
+    ld a, 15
+    ld [$C012], a
 
     ld a, [$C011]  ;anime variable (starts as $8F)
     xor a, %00010111   ;flip flop between $8F and $98
