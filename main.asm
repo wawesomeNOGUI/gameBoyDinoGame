@@ -108,42 +108,28 @@ dmaEnd:
     call Load8BitIntToFixedPointInMem
 
     ;dino gravity acceration
-    ld a, 0
+    ld a, 5   ;can change starting accel to make dino jump shorter / higher
     ld hl, $C008
     call Load8BitIntToFixedPointInMem
 
-    ;acceleration delay (loop through 100 times without accel)
-    ld a, 100
-    ld [$C010], a
-    ;ld hl, $C008
-    ;call Load8BitIntToFixedPointInMem
-
     ;dino anime xor starting variable
     ld a, $8F   ;flip flop between $8F and $98 with xor %00010111
-    ld [$C011], a
+    ld [$C020], a
 
     ;dino animation delay var
     ld a, 25
-    ld [$C012], a
+    ld [$C021], a
 
-    ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
-    ;WRA1 = Work RAm 1 starts at $D000
-    ;I'm just clearing the WRAM so I can see changes easier in the debugger
-    ld hl, $D000 ;start of WRA1
-  .clearWRA1
-    xor a
-    ld [hli], a
-    ld a, l
-    cp a, $9f
-    jr nz, .clearWRA1
-
-   ;Init display registers
-   ld a, %11100100
-   ld [rBGP], a
-
-   xor a ; ld a, 0
-   ld [rSCY], a
-   ld [rSCX], a
+  ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
+  ;WRA1 = Work RAm 1 starts at $D000
+  ;clear WRAM1 so DMA transfer doesn't copy random data
+  ld hl, $D000 ;start of WRA1
+.clearWRA1
+  xor a
+  ld [hli], a
+  ld a, l
+  cp a, $9f
+  jr nz, .clearWRA1
 
 ;Clear OAM so no phantom random sprites
    ld hl, $FE00 ;start of OAM
@@ -153,6 +139,14 @@ dmaEnd:
     ld a, l
     cp a, $9f
     jr nz, .clearOAM
+
+  ;Init display registers
+  ld a, %11100100
+  ld [rBGP], a
+
+  xor a ; ld a, 0
+  ld [rSCY], a
+  ld [rSCX], a
 
 ;=======================================================
 ;Cactus setup
@@ -460,18 +454,18 @@ Dropper:
   cp a, 104
   jr c, .regDinolegs  ;dino y < 104
 
-    ld a, [$C012]  ;dino animation delay
+    ld a, [$C021]  ;dino animation delay
     dec a
-    ld [$C012], a
+    ld [$C021], a
     cp a, 0
     jr nz, .dinoUpdate  ;dino y < 104
 
     ld a, 15
-    ld [$C012], a
+    ld [$C021], a
 
-    ld a, [$C011]  ;anime variable (starts as $8F)
+    ld a, [$C020]  ;anime variable (starts as $8F)
     xor a, %00010111   ;flip flop between $8F and $98
-    ld [$C011], a
+    ld [$C020], a
 
     ;$D01A & 1E are legs tile index
     ;tiles $8F and $90 are run1, $98 and $99 are run2, $86 and $87 are no run
@@ -514,18 +508,14 @@ Dropper:
     ld c, a  ;dino x
     call DinoMove
 
+    ;check if dino below ground, if so move him up and reset vel, and grav accel
+    ;else if dino above do grav
+.checkDinoGround
+    ld a, [$D000]  ;dino y
+    cp a, 104
+    jr nc, .setDinoTo100  ;if dino y greater than or equal to 104 setDinoTo100, else do grav
+
     ;GRAVITTTTY
-    ;first check for accel loop delay
-    ld a, [$C010]
-    dec a
-    ld [$C010], a  ;store delay count
-    cp a, 0
-    jr nz, .checkDinoGround
-
-    ;reset accel delay
-    ld a, 5
-    ld [$C010], a
-
     ;store grav accceceelelleration in bc
     ld a, [$C008]
     ld b, a
@@ -534,11 +524,19 @@ Dropper:
 
     ;gravitational accceceelelleration
     inc bc
+
     ;and store new grav
     ld a, b
     ld [$C008], a
     ld a, c
     ld [$C009], a
+
+    ;takes bc, returns b int (used to slow down grav accel)
+    call ShiftFixedPointToInt
+    ;store b in c so correct endianess (b most significant, c least significant)
+    ld a, b
+    ld c, b
+    ld b, 0
 
     ;set de to dino y-velocity
     ld a, [$C006]
@@ -555,11 +553,6 @@ Dropper:
     ld a, c
     ld [$C007], a
 
-;next check if dino below ground, if so move him up and rest vel, and grav accel
-.checkDinoGround
-    ld a, [$D000]  ;dino y
-    cp a, 104
-    jr nc, .setDinoTo100  ;if dino less than or equal to 104, no need to setDinoTo100
     jp Dropper
 
 .setDinoTo100
@@ -569,6 +562,7 @@ Dropper:
     ld [$C007], a
     ;reset grav accel
     ld [$C008], a
+    ld a, 5
     ld [$C009], a
 
     ;reset dino y fixed point
