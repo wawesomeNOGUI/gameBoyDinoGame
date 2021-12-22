@@ -107,8 +107,8 @@ dmaEnd:
     ld hl, $C006
     call Load8BitIntToFixedPointInMem
 
-    ;dino gravity acceration
-    ld a, 5   ;can change starting accel to make dino jump shorter / higher
+    ;dino gravity acceration (change starting accel at .setDinoTo100)
+    ld a, 0
     ld hl, $C008
     call Load8BitIntToFixedPointInMem
 
@@ -562,7 +562,7 @@ Dropper:
     ld [$C007], a
     ;reset grav accel
     ld [$C008], a
-    ld a, 5
+    ld a, 5  ;can change starting accel to make dino jump shorter / higher
     ld [$C009], a
 
     ;reset dino y fixed point
