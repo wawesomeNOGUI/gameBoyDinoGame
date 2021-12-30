@@ -75,6 +75,14 @@ dmaEnd:
     ;gives you 16 fractional values
     ;shift these values right four times to get interger
 
+    ;RGBDS assembler defines so it will fill out stuff with those values for us
+    ;I'll use capital letters for RGBDS defines
+    ;DEF DINO_X = $C000
+    ;DEF DINO_Y = $C002
+    ;DEF DINO_X_VEL = $C004
+    ;DEF DINO_Y_VEL = $C006
+    ;DEF DINO_GRAV_ACCEL = $C008
+
     ;dino x
     ld a, 20
     ld hl, $C000
@@ -140,9 +148,14 @@ dmaEnd:
     cp a, $9f
     jr nz, .clearOAM
 
-  ;Init display registers
-  ld a, %11100100
+  ;Init background and sprite color palletes
+  ;ld a, %11111111 ;for night mode invert pallete
+  ld a, %11000000
   ld [rBGP], a
+
+  ;ld a, %00000000 ;for night mode invert pallete
+  ld a, %11111100
+  ld [rOBP0], a
 
   xor a ; ld a, 0
   ld [rSCY], a
@@ -153,63 +166,61 @@ dmaEnd:
 ;=======================================================
 ;reg cactus
 ;mid
-ld a, $8A
+ld a, $9C  ;top
 ld [$9921], a
-ld a, $8D
+ld a, $9F
 ld [$9941], a
-ld a, $93
+ld a, $A5  ;connect to stems
 ld [$9961], a
-ld a, $8D
+ld a, $9F
 ld [$9981], a
-ld a, $99
+ld a, $9F
 ld [$99A1], a
 
 ;stems
 ;left
-ld a, $8C
+ld a, $9E
 ld [$9940], a
-ld a, $92
+ld a, $A4
 ld [$9960], a
 ;right
-ld a, $8E
+ld a, $A0
 ld [$9942], a
-ld a, $94
+ld a, $A6
 ld [$9962], a
+
+;cactus ground
+ld a, $AA
+ld [$99A0], a
+ld a, $AC
+ld [$99A2], a
 
 ;ground
 ;keep changing offscreen ones to add new random ground when scrolling at .update
-ld a, $98
+;load in value from random RAM spot (ram randomized on startup)
+;query bits 0-4 for tiles $AC - $B0
+ld a, 0
+ld [$CFFE], a  ;what bit to test
+.groundPlace
+ld a, [$CFFF]
+ld e, a  ;save orig value of $CFFF
+ld a, [$CFFE]
+bit a, e  ;test bit 0 of e
+
+jr z, .placeNormalGround
+ld b, $AC
+inc a
+ld [$CFFE], a
+add a, b
 ld [$99A0], a
-ld a, $9A
-ld [$99A2], a
-ld a, $98
-ld [$99A3], a
-ld a, $9A
-ld [$99A4], a
-ld a, $9A
-ld [$99A5], a
-ld a, $9A
-ld [$99A6], a
-ld a, $98
-ld [$99A7], a
-ld a, $98
-ld [$99A8], a
-ld a, $98
-ld [$99A9], a
-ld a, $9A
-ld [$99AA], a
-ld a, $98
-ld [$99AB], a
-ld a, $98
-ld [$99AC], a
-ld a, $9A
-ld [$99AD], a
-ld a, $9A
-ld [$99AE], a
-ld a, $98
-ld [$99AF], a
-ld a, $98
-ld [$99B0], a
+
+
+
+.placeNormalGround
+
+;ld a, $98
+;ld [$99A0], a
+
 
 ;=======================================================
 ;sprite data
@@ -584,4 +595,8 @@ INCBIN "dino.2bpp"
 INCBIN "dino24x24Running/run1.2bpp"
 INCBIN "dino24x24Running/run2.2bpp"
 INCBIN "cactus.2bpp"
+INCBIN "groundSprites/ground0.2bpp"
+INCBIN "groundSprites/ground1.2bpp"
+INCBIN "groundSprites/ground2.2bpp"
+INCBIN "groundSprites/ground3.2bpp"
 GameTilesEnd:
