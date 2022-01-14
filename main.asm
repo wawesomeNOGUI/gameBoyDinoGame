@@ -161,66 +161,24 @@ dmaEnd:
   ld [rSCY], a
   ld [rSCX], a
 
-;=======================================================
-;Cactus setup
-;=======================================================
-;reg cactus
-;mid
-ld a, $9C  ;top
-ld [$9921], a
-ld a, $9F
-ld [$9941], a
-ld a, $A5  ;connect to stems
-ld [$9961], a
-ld a, $9F
-ld [$9981], a
-ld a, $9F
-ld [$99A1], a
-
-;stems
-;left
-ld a, $9E
-ld [$9940], a
-ld a, $A4
-ld [$9960], a
-;right
-ld a, $A0
-ld [$9942], a
-ld a, $A6
-ld [$9962], a
-
-;cactus ground
-ld a, $AA
-ld [$99A0], a
-ld a, $AC
-ld [$99A2], a
-
-;ground
+;ground setup
 ;keep changing offscreen ones to add new random ground when scrolling at .update
 ;load in value from random RAM spot (ram randomized on startup)
-;query bits 0-4 for tiles $AC - $B0
-ld a, 0
-ld [$CFFE], a  ;what bit to test
+;query bits 0-4 for tiles $AC - $B2
+ld hl, $99A3  ;starting location for ground
+ld de, $C100  ;random RAM start
 .groundPlace
-ld a, [$CFFF]
-ld e, a  ;save orig value of $CFFF
-ld a, [$CFFE]
-bit a, e  ;test bit 0 of e
+ld a, [de]
+inc de
 
-jr z, .placeNormalGround
-ld b, $AC
-inc a
-ld [$CFFE], a
-add a, b
-ld [$99A0], a
+and a, %111  ;get num between 0-7
 
+add a, $AC
+ld [hli], a  ;place ground in tile map mem
 
-
-.placeNormalGround
-
-;ld a, $98
-;ld [$99A0], a
-
+ld a , l
+cp a, $C0
+jr nz, .groundPlace
 
 ;=======================================================
 ;sprite data
@@ -283,7 +241,7 @@ ld [$99A0], a
   ld a, (LCDCF_ON | LCDCF_BG8800 | LCDCF_BGON | LCDCF_OBJON) ;display sprites too
   ld [rLCDC], a
 
-jr GameLoop
+jp GameLoop
 
 
 ;================================================
@@ -386,9 +344,88 @@ DinoMove:
   add a, 8     ;move down y-pos for updating next row
   ld b, a
 
-
   jr .updateDinoParts
 
+;=======================================================
+;Cactus place routine takes register a as tile x-value
+;=======================================================
+PlaceRegularCactus:
+  ;save copy of x-value
+  ld b, a
+  ;since catuses only placed in $99-- tile map space, we'll only update l
+  ld h, $99
+
+  ;regular cactus
+  ;mid
+  add a, $21
+  ld l, a
+  ld a, $9C  ;top
+  ld [hl], a
+
+  ld a, b
+  add a, $41
+  ld l, a
+  ld a, $9F
+  ld [hl], a
+
+  ld a, b
+  add a, $61
+  ld l, a
+  ld a, $A5  ;connect to stems
+  ld [hl], a
+
+  ld a, b
+  add a, $81
+  ld l, a
+  ld a, $9F
+  ld [hl], a
+
+  ld a, b
+  add a, $A1
+  ld l, a
+  ld a, $9F
+  ld [hl], a
+
+  ;stems
+  ;left
+  ld a, b
+  add a, $40
+  ld l, a
+  ld a, $9E
+  ld [hl], a
+
+  ld a, b
+  add a, $60
+  ld l, a
+  ld a, $A4
+  ld [hl], a
+  ;right
+  ld a, b
+  add a, $42
+  ld l, a
+  ld a, $A0
+  ld [hl], a
+
+  ld a, b
+  add a, $62
+  ld l, a
+  ld a, $A6
+  ld [hl], a
+
+  ;cactus ground
+  ld a, b
+  add a, $A0
+  ld l, a
+  ld a, $AA
+  ld [hl], a
+
+  ld a, b
+  add a, $A2
+  ld l, a
+  ld a, $AC
+  ld [hl], a
+
+  ret
 
 
 GameLoop:
@@ -458,6 +495,12 @@ Dropper:
   inc a
   inc a
   ld [$FF43], a
+
+  ;if scx greater than cactus width, delete cactus
+
+  ;place new cactus on random interval
+  ;use a set to SCX for cactus x-value
+  call PlaceRegularCactus
 
 .dinoLegAnimation
   ;if dino is on ground
@@ -599,4 +642,7 @@ INCBIN "groundSprites/ground0.2bpp"
 INCBIN "groundSprites/ground1.2bpp"
 INCBIN "groundSprites/ground2.2bpp"
 INCBIN "groundSprites/ground3.2bpp"
+INCBIN "groundSprites/ground4.2bpp"
+INCBIN "groundSprites/ground5.2bpp"
+INCBIN "groundSprites/ground6.2bpp"
 GameTilesEnd:
