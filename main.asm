@@ -128,6 +128,14 @@ dmaEnd:
     ld a, 25
     ld [$C021], a
 
+    ;store Binary Coded Decimal Score
+    ;4 bytes
+    xor a
+    ld [$C0A0], a
+    ld [$C0A1], a
+    ld [$C0A2], a
+    ld [$C0A3], a
+
   ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
   ;WRA1 = Work RAm 1 starts at $D000
   ;clear WRAM1 so DMA transfer doesn't copy random data
@@ -292,6 +300,25 @@ AddTwo16BitNumbers:
   ld a, b
   adc a, d
   ld b, a
+  ret
+
+;increments the player's score stored at $C0A0-$C0A3
+IncScore:
+  ld hl, $C0A0
+  ld a, [hli]
+  add a, 1  ;can't use increment because inc doesn't update carry flag
+  ld [$C0A0], a
+  ld a, 0
+  adc a, [hl]
+  inc hl
+  ld [$C0A1], a
+  ld a, 0
+  adc a, [hl]
+  inc hl
+  ld [$C0A2], a
+  ld a, 0
+  adc a, [hl]
+  ld [$C0A3], a
   ret
 
 ;================================================
@@ -500,7 +527,7 @@ Dropper:
 
   ;place new cactus on random interval
   ;use a set to SCX for cactus x-value
-  call PlaceRegularCactus
+  ;call PlaceRegularCactus
 
 .dinoLegAnimation
   ;if dino is on ground
@@ -513,6 +540,9 @@ Dropper:
     ld [$C021], a
     cp a, 0
     jr nz, .dinoUpdate  ;dino y < 104
+
+    ;increment score every dino step
+    call IncScore
 
     ld a, 15
     ld [$C021], a
