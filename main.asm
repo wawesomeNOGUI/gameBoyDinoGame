@@ -36,6 +36,20 @@ Start:
     or c
     jr nz, .copyGameStuff
 
+    ;copy font tiles to game tile ram
+    ld hl, $9000
+    ld de, FontTiles
+    ld bc, FontTilesEnd - FontTiles
+.copyFontTiles
+    ld a, [de] ; Grab 1 byte from the source
+    ld [hli], a ; Place it at the destination, incrementing hl
+    inc de ; Move to next byte
+    dec bc ; Decrement count
+    ld a, b ; Check if count is 0, since `dec bc` doesn't update flags
+    or c
+    jr nz, .copyFontTiles
+
+
     jr dmaEnd
 
 ;Push DMA transfer routine into HRAM
@@ -307,17 +321,21 @@ IncScore:
   ld hl, $C0A0
   ld a, [hli]
   add a, 1  ;can't use increment because inc doesn't update carry flag
+  daa ;turn to BCD representation
   ld [$C0A0], a
   ld a, 0
   adc a, [hl]
   inc hl
+  daa ;turn to BCD representation
   ld [$C0A1], a
   ld a, 0
   adc a, [hl]
   inc hl
+  daa ;turn to BCD representation
   ld [$C0A2], a
   ld a, 0
   adc a, [hl]
+  daa ;turn to BCD representation
   ld [$C0A3], a
   ret
 
@@ -454,6 +472,32 @@ PlaceRegularCactus:
 
   ret
 
+;=================Draw Score====================
+DrawScore:
+  ld c, 4  ;how many bytes to read
+  ld hl, $983D ;location in BG Map
+  ld de, $C0A0 ;score in $C0A0 - $C0A3
+
+  .repeatThroughBytes
+  ld a, [de]
+  inc e
+  ld b, a
+  and a, %00001111  ;get lower 4 bits (one digit of 0-9 in BCD)
+  add a, $30  ;$30 start of number tiles in tile memory
+  ld [hld], a
+  ld a, b
+  swap a  ;place upper 4 bits in lower 4 bits
+  and a, %00001111
+  add a, $30
+  ld [hld], a
+  ld a, b
+
+  dec c
+  xor a
+  cp a, c
+  jr nz, .repeatThroughBytes
+
+  ret
 
 GameLoop:
 
@@ -543,6 +587,7 @@ Dropper:
 
     ;increment score every dino step
     call IncScore
+    call DrawScore
 
     ld a, 15
     ld [$C021], a
@@ -676,3 +721,9 @@ INCBIN "groundSprites/ground4.2bpp"
 INCBIN "groundSprites/ground5.2bpp"
 INCBIN "groundSprites/ground6.2bpp"
 GameTilesEnd:
+
+SECTION "Font", ROM0
+
+FontTiles:
+INCBIN "font.chr"
+FontTilesEnd:
