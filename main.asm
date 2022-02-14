@@ -37,7 +37,7 @@ Start:
     jr nz, .copyGameStuff
 
     ;copy font tiles to game tile ram
-    ld hl, $9000
+    ld hl, $8000
     ld de, FontTiles
     ld bc, FontTilesEnd - FontTiles
 .copyFontTiles
@@ -234,7 +234,7 @@ jr nz, .groundPlace
   ;check if finished loading sprite
   ld a, e
   cp a, $88
-  jr z, .lcdOn
+  jr z, .dinoSetupEnd
 
   inc b
 
@@ -253,6 +253,29 @@ jr nz, .groundPlace
   ld c, 20
 
   jr .dinoSetup
+.dinoSetupEnd
+
+;score setup
+ld c, 8   ;uses 8 sprites
+ld b, 24   ;y-location
+ld d, 144 ;starting x-location
+ld hl, $D020
+.scoreSetup
+  ld a, b
+  ld [hli], a
+  ld a, d
+  ld [hli], a
+  sub a, 8
+  ld d, a
+  inc hl
+  inc hl
+
+  dec c
+  xor a
+  cp a, c
+  jr nz, .scoreSetup
+
+
 
 .lcdOn
   ; Shut sound down
@@ -260,7 +283,7 @@ jr nz, .groundPlace
 
   ; Turn screen on, display background
   ;ld a, (LCDCF_ON | LCDCF_BG8000 | LCDCF_BGON )
-  ld a, (LCDCF_ON | LCDCF_BG8800 | LCDCF_BGON | LCDCF_OBJON) ;display sprites too
+  ld a, (LCDCF_ON | LCDCF_BG9800  | LCDCF_BGON | LCDCF_OBJON) ;display sprites too
   ld [rLCDC], a
 
 jp GameLoop
@@ -475,7 +498,7 @@ PlaceRegularCactus:
 ;=================Draw Score====================
 DrawScore:
   ld c, 4  ;how many bytes to read
-  ld hl, $983D ;location in BG Map
+  ld hl, $D022 ;location in shadow OAM
   ld de, $C0A0 ;score in $C0A0 - $C0A3
 
   .repeatThroughBytes
@@ -484,12 +507,18 @@ DrawScore:
   ld b, a
   and a, %00001111  ;get lower 4 bits (one digit of 0-9 in BCD)
   add a, $30  ;$30 start of number tiles in tile memory
-  ld [hld], a
+  ld [hli], a
+  inc hl
+  inc hl
+  inc hl
   ld a, b
   swap a  ;place upper 4 bits in lower 4 bits
   and a, %00001111
   add a, $30
-  ld [hld], a
+  ld [hli], a
+  inc hl
+  inc hl
+  inc hl
   ld a, b
 
   dec c
