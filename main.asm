@@ -139,7 +139,7 @@ dmaEnd:
     ld [$C020], a
 
     ;dino animation delay var
-    ld a, 25
+    ld a, 15
     ld [$C021], a
 
     ;store Binary Coded Decimal Score
@@ -495,6 +495,87 @@ PlaceRegularCactus:
 
   ret
 
+;==========================================
+;RemoveRegularCactus removes cactus's tiles from tile x value in register a
+;==========================================
+RemoveRegularCactus:
+  ;save copy of x-value
+  ld b, a
+  ;since catuses only placed in $99-- tile map space, we'll only update l
+  ld h, $99
+
+  ;regular cactus
+  ;mid
+  add a, $21
+  ld l, a
+  xor a  ;top
+  ld [hl], a
+
+  ld a, b
+  add a, $41
+  ld l, a
+  xor a
+  ld [hl], a
+
+  ld a, b
+  add a, $61
+  ld l, a
+  xor a  ;connect to stems
+  ld [hl], a
+
+  ld a, b
+  add a, $81
+  ld l, a
+  xor a
+  ld [hl], a
+
+  ld a, b
+  add a, $A1
+  ld l, a
+  xor a
+  ld [hl], a
+
+  ;stems
+  ;left
+  ld a, b
+  add a, $40
+  ld l, a
+  xor a
+  ld [hl], a
+
+  ld a, b
+  add a, $60
+  ld l, a
+  xor a
+  ld [hl], a
+  ;right
+  ld a, b
+  add a, $42
+  ld l, a
+  xor a
+  ld [hl], a
+
+  ld a, b
+  add a, $62
+  ld l, a
+  xor a
+  ld [hl], a
+
+  ;cactus ground
+  ld a, b
+  add a, $A0
+  ld l, a
+  ld a, $AA
+  ld [hl], a
+
+  ld a, b
+  add a, $A2
+  ld l, a
+  ld a, $AC
+  ld [hl], a
+
+  ret
+
 ;=================Draw Score====================
 DrawScore:
   ld c, 4  ;how many bytes to read
@@ -533,7 +614,6 @@ GameLoop:
 ;================================================
 ;Dropper Script
 ;================================================
-
   ;ld b, 0    ;counter
   ld d, 0
   ld e, 1
@@ -600,7 +680,8 @@ Dropper:
 
   ;place new cactus on random interval
   ;use a set to SCX for cactus x-value
-  ;call PlaceRegularCactus
+  xor a
+  call PlaceRegularCactus
 
 .dinoLegAnimation
   ;if dino is on ground
