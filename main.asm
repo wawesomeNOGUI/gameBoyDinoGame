@@ -142,6 +142,14 @@ dmaEnd:
     ld a, 15
     ld [$C021], a
 
+    ;cacti x locations
+  ;  ld [$C030], 0
+
+    ;scroll speed
+    ld a, 1
+    ld hl, $C050
+    call Load8BitIntToFixedPointInMem
+
     ;store Binary Coded Decimal Score
     ;4 bytes
     xor a
@@ -149,6 +157,10 @@ dmaEnd:
     ld [$C0A1], a
     ld [$C0A2], a
     ld [$C0A3], a
+
+
+
+
 
   ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
   ;WRA1 = Work RAm 1 starts at $D000
@@ -670,7 +682,9 @@ Dropper:
 
 .update
   ;scroll background to scroll cacti and ground
-  ld a, [$FF43] ;Scroll X
+  ;by adding scroll speed to Scroll X ?
+  ;for now just inc Scroll X twice
+  ld a, [$FF43]
   inc a
   inc a
   ld [$FF43], a
@@ -678,12 +692,16 @@ Dropper:
   ;if scx greater than cactus width, delete cactus
 
   ;place new cactus on random interval
-  ;use a set to SCX for cactus x-value
-  ;xor a
   ;divide Scroll X by 8 (rotates a right without carry)
-  srl a
-  srl a
-  srl a
+  ;srl a
+  ;srl a
+  ;srl a
+  ;actually just using the shift right and bit mask
+  ;gives 16 different cactus positions which I think is good enough
+  ;srl a
+  ;and a, %00011101
+  ld a, 0
+  ld [$C030], a  ;load catus x postion for hit detection/deletion
   call PlaceRegularCactus
 
 .dinoLegAnimation
@@ -698,13 +716,14 @@ Dropper:
     cp a, 0
     jr nz, .dinoUpdate  ;dino y < 104
 
+    ld a, 15
+    ld [$C021], a
+
     ;increment score every dino step
     call IncScore
     call DrawScore
 
-    ld a, 15
-    ld [$C021], a
-
+    ;animate legs
     ld a, [$C020]  ;anime variable (starts as $8F)
     xor a, %00010111   ;flip flop between $8F and $98
     ld [$C020], a
@@ -776,7 +795,6 @@ Dropper:
     ;takes bc, returns b int (used to slow down grav accel)
     call ShiftFixedPointToInt
     ;store b in c so correct endianess (b most significant, c least significant)
-    ld a, b
     ld c, b
     ld b, 0
 
