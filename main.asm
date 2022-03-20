@@ -610,7 +610,6 @@ DrawScore:
   ret
 
 GameLoop:
-
 ;================================================
 ;Dropper Script
 ;================================================
@@ -680,7 +679,11 @@ Dropper:
 
   ;place new cactus on random interval
   ;use a set to SCX for cactus x-value
-  xor a
+  ;xor a
+  ;divide Scroll X by 8 (rotates a right without carry)
+  srl a
+  srl a
+  srl a
   call PlaceRegularCactus
 
 .dinoLegAnimation
