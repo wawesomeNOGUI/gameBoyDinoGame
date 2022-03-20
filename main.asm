@@ -150,6 +150,11 @@ dmaEnd:
     ld hl, $C050
     call Load8BitIntToFixedPointInMem
 
+    ;scroll speed accel
+    xor a
+    ld [$C052], a
+    ld [$C053], a
+
     ;store Binary Coded Decimal Score
     ;4 bytes
     xor a
@@ -157,10 +162,6 @@ dmaEnd:
     ld [$C0A1], a
     ld [$C0A2], a
     ld [$C0A3], a
-
-
-
-
 
   ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
   ;WRA1 = Work RAm 1 starts at $D000
@@ -682,11 +683,27 @@ Dropper:
 
 .update
   ;scroll background to scroll cacti and ground
-  ;by adding scroll speed to Scroll X ?
+  ;by adding scroll speed to Scroll X
   ;for now just inc Scroll X twice
+;  ld a, [$FF43]
+;  inc a
+;  inc a
+;  ld [$FF43], a
+
+  ;set bc to scroll speed
+  ld a, [$C050]
+  ld b, a
+  ld a, [$C051]
+  ld c, a
+
+  ;set de to Scroll X
+  ld d, 0
   ld a, [$FF43]
-  inc a
-  inc a
+  ld e, a
+
+  call ShiftFixedPointToInt ;returns b
+
+  ld a, b
   ld [$FF43], a
 
   ;if scx greater than cactus width, delete cactus
@@ -722,6 +739,38 @@ Dropper:
     ;increment score every dino step
     call IncScore
     call DrawScore
+
+    ;increment scroll speed accel (maybe just have no speed accel e.g linear speed up)
+    ld a, [$C052]
+    ld b, a
+    ld a, [$C053]
+    ld c, a
+
+    inc bc
+
+    ld a, b
+    ld [$C052], a
+    ld a, c
+    ld [$C053], a
+
+    ;add the scroll speed accel to scroll speed
+    ld a, [$C050]
+    ld d, a
+    ld a, [$C051]
+    ld e, a
+
+    ;takes bc, returns b int (used to slow down scroll accel)
+    call ShiftFixedPointToInt
+    ;store b in c so correct endianess (b most significant, c least significant)
+    ld c, b
+    ld b, 0
+
+    call AddTwo16BitNumbers ;returns bc
+
+    ld a, b
+    ld [$C050], a
+    ld a, c
+    ld [$C051], a
 
     ;animate legs
     ld a, [$C020]  ;anime variable (starts as $8F)
@@ -804,7 +853,7 @@ Dropper:
     ld a, [$C007]
     ld e, a
 
-    ;add grav to y-velocty (de still set to dino y)
+    ;add grav to y-velocty
     call AddTwo16BitNumbers  ;returns bc
 
     ;store new y-velocity
