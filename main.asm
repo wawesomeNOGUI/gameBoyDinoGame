@@ -146,11 +146,11 @@ dmaEnd:
   ;  ld [$C030], 0
 
     ;scroll speed
-    ld a, 1
+    ld a, 15
     ld hl, $C050
     call Load8BitIntToFixedPointInMem
 
-    ;scroll speed accel
+    ;scroll x fixed point
     xor a
     ld [$C052], a
     ld [$C053], a
@@ -696,10 +696,22 @@ Dropper:
   ld a, [$C051]
   ld c, a
 
-  ;set de to Scroll X
-  ld d, 0
-  ld a, [$FF43]
+  call ShiftFixedPointToInt ;returns b
+  ld c, b
+  ld b, 0
+
+  ;set de to Scroll X Fixed Point
+  ld a, [$C052]
+  ld d, a
+  ld a, [$C053]
   ld e, a
+
+  call AddTwo16BitNumbers ;returns bc
+
+  ld a, b
+  ld [$C052], a
+  ld a, c
+  ld [$C053], a
 
   call ShiftFixedPointToInt ;returns b
 
@@ -741,36 +753,19 @@ Dropper:
     call DrawScore
 
     ;increment scroll speed accel (maybe just have no speed accel e.g linear speed up)
-    ld a, [$C052]
-    ld b, a
-    ld a, [$C053]
-    ld c, a
+    ;ld a, [$C052]
+    ;ld b, a
+    ;ld a, [$C053]
+    ;ld c, a
 
-    inc bc
+    ;inc bc
 
-    ld a, b
-    ld [$C052], a
-    ld a, c
-    ld [$C053], a
+    ;ld a, b
+    ;ld [$C052], a
+    ;ld a, c
+    ;ld [$C053], a
 
-    ;add the scroll speed accel to scroll speed
-    ld a, [$C050]
-    ld d, a
-    ld a, [$C051]
-    ld e, a
 
-    ;takes bc, returns b int (used to slow down scroll accel)
-    call ShiftFixedPointToInt
-    ;store b in c so correct endianess (b most significant, c least significant)
-    ld c, b
-    ld b, 0
-
-    call AddTwo16BitNumbers ;returns bc
-
-    ld a, b
-    ld [$C050], a
-    ld a, c
-    ld [$C051], a
 
     ;animate legs
     ld a, [$C020]  ;anime variable (starts as $8F)
