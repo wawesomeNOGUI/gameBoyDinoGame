@@ -401,8 +401,7 @@ IncScore:
   ld hl, $C0A4
   cp a, [hl]
   jr nz, .noDayChange
-  inc a
-  daa
+  add a, %00010000
   ld [hl], a
   ld a, [rBGP]
   xor a, %00111111  ;flip between %11000000 (day) and %11111111 (night)
