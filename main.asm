@@ -163,6 +163,9 @@ dmaEnd:
     ld [$C0A2], a
     ld [$C0A3], a
 
+    ;store check number for night and day transition
+    ld a, %00010000 ;BCD for 1 checked in thousandths place in IncScore
+    ld [$C0A4], a
 
 
   ;D000 is gonna be for storing sprite data for DMA trnsfer to OAM
@@ -356,7 +359,8 @@ AddTwo16BitNumbers:
 
 ;increments the player's score stored at $C0A0-$C0A3
 IncScore:
-  ld b, 0
+  ld b, 0 ;bool for if to inc speed or naw
+  ld e, 0 ;for if to flip flop to night or day
 
   ld hl, $C0A0
   ld a, [hli]
@@ -374,6 +378,7 @@ IncScore:
   adc a, [hl]
   inc hl
   daa ;turn to BCD representation
+  ld e, a  ;for night day check every 1000
   ld [$C0A1], a
   ld a, 0
   adc a, [hl]
@@ -390,6 +395,23 @@ IncScore:
   ld hl, $C053
   inc [hl]
   .noSpeedUp
+
+  ld a, e
+  and a, %11110000  ;BCD 9 in thousandths place
+  ld hl, $C0A4
+  cp a, [hl]
+  jr nz, .noDayChange
+  inc a
+  daa
+  ld [hl], a
+  ld a, [rBGP]
+  xor a, %00111111  ;flip between %11000000 (day) and %11111111 (night)
+  ld [rBGP], a
+
+  ld a, [rOBP0]
+  xor a, %11111100  ;flip between %11111100 (day) and %00000000 (night)
+  ld [rOBP0], a
+  .noDayChange
   ret
 
 ;================================================
