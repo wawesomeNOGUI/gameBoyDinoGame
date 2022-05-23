@@ -143,7 +143,21 @@ dmaEnd:
     ld [$C021], a
 
     ;cacti x locations
-  ;  ld [$C030], 0
+    xor a
+    ld [$C030], a
+
+    ;place or remove cactus boolean
+    ld [$C031], a  ; 1 = place cactus, 0 = remove cactus
+
+    ;cactus place counter delay
+    ld [$C032], a
+
+    ;cactus random mem look location to get random counter delay amount
+    ;clamped to $C000 - $CFFF
+    ld a, $C0
+    ld [$C033], a
+    xor a
+    ld [$C034], a
 
     ;scroll x postiion fixed point
     ld a, 0
@@ -743,14 +757,14 @@ Dropper:
   ld a, [$C053]
   ld c, a
 
-  ;add velocity y to dino y (store new y in bc for use in ShiftFixedPointToInt)
+  ;add scroll velocity to scroll x
   call AddTwo16BitNumbers  ;returns bc
 
   ;store new  scroll x
   ld a, b
-  ld [$C050], a  ;dino y Fixed Point
+  ld [$C050], a
   ld a, c
-  ld [$C051], a  ;dino y Fixed Point
+  ld [$C051], a
 
   call ShiftFixedPointToInt  ;returns b
 
@@ -761,7 +775,7 @@ Dropper:
   ;if scx greater than cactus width, delete cactus
 
   ;place new cactus on random interval
-  ;divide Scroll X by 8 (rotates a right without carry)
+  ;divide Scroll X by 8 (shifts a right without carry)
   ;srl a
   ;srl a
   ;srl a
@@ -774,11 +788,61 @@ Dropper:
   ;cp a, 0
   ;call z, RemoveRegularCactus
 
+  ld a, [$C031]  ;check if should place catcus or should remove cactus
+  cp a, 1
+  jr nz, .removeCactus
+
+  .placeCactusDelay
+  ld a, [$C032]
+  dec a
+  ld [$C032], a
+  jr nz, .removeCactus
+
+  .placeCactus
+  xor a
+  ld [$C031], a  ;set cactus place boolean to false (remove cactus)
+
   ld a, [$FF43]
   srl a
   and a, %00011101
   ld [$C030], a  ;load catus x postion for hit detection/deletion
-  ;call PlaceRegularCactus
+  call PlaceRegularCactus
+  jr .dinoLegAnimation
+
+  .removeCactus
+  ld a, [$FF43]     ;wait until cactus out of view, then delete
+  ld b, a
+  ld a, [$C030]  ;cactus x
+  cp a, b
+  jr nz, .dinoLegAnimation
+
+  ;a still set to cactus x location $C030
+  call RemoveRegularCactus
+
+  ld a, 1
+  ld [$C031], a  ;set cactus place boolean to true (place cactus)
+
+  .resetCactusCounter
+  ld a, [$C033]
+  ld d, a
+  ld a, [$C034]
+  ld e, a
+  inc de
+  ld a, d
+  cp a, $D0  ;clamp random num range between $C000 - $CFFF
+  jr z, .clampRandomPick
+
+  ;else store incremented location
+  ld [$C033], a
+  ld a, e
+  ld [$C034], a
+  jr .dinoLegAnimation
+
+  .clampRandomPick
+  ld a, $C0
+  ld [$C033], a
+  xor a
+  ld [$C034], a
 
 .dinoLegAnimation
   ;if dino is on ground
