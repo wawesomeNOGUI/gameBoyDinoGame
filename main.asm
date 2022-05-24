@@ -806,6 +806,7 @@ Dropper:
   xor a, %00000010
   ld [$C040], a
   ld [$C031], a
+  jr .dinoLegAnimation
 
   .placeCactus
   ;only place cactus when scrolled out of view
@@ -826,11 +827,11 @@ Dropper:
   jr .dinoLegAnimation
 
   .removeCactus
-  ;ld a, [$FF43]     ;wait until cactus out of view, then delete
-  ;cp a, 24  ;cactus width = 24 pixels (three tiles)
-  ;jr c, .dinoLegAnimation  ;a < 24
-  ;cp a, 100
-  ;jr nc, .dinoLegAnimation  ;a > 100
+  ld a, [$FF43]     ;wait until cactus out of view, then delete
+  cp a, 24  ;cactus width = 24 pixels (three tiles)
+  jr c, .dinoLegAnimation  ;a < 24
+  cp a, 100
+  jr nc, .dinoLegAnimation  ;a > 100
 
   ;a still set to cactus x location $C030
   xor a
