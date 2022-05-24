@@ -147,7 +147,8 @@ dmaEnd:
     ld [$C030], a
 
     ;place or remove cactus boolean
-    ld [$C031], a  ; 1 = place cactus, 0 = remove cactus
+    ld [$C031], a  ; 2 = place cactus, 0 = remove cactus, 1 = delay counter before place cactus
+    ld [$C040], a  ;which one (0 or 2) to flip flop to
 
     ;cactus place counter delay
     ld [$C032], a
@@ -789,34 +790,50 @@ Dropper:
   ;call z, RemoveRegularCactus
 
   ld a, [$C031]  ;check if should place catcus or should remove cactus
-  cp a, 1
-  jr nz, .removeCactus
+  cp a, 0
+  jr z, .removeCactus
+  cp a, 2
+  jr z, .placeCactus  ;delay already done
 
   .placeCactusDelay
   ld a, [$C032]
   dec a
   ld [$C032], a
-  jr nz, .removeCactus
+  jr nz, .dinoLegAnimation
+
+  ;flip flop between 0 and 2
+  ld a, [$C040]
+  xor a, %00000010
+  ld [$C040], a
+  ld [$C031], a
 
   .placeCactus
-  xor a
-  ld [$C031], a  ;set cactus place boolean to false (remove cactus)
-
+  ;only place cactus when scrolled out of view
   ld a, [$FF43]
-  srl a
-  and a, %00011101
-  ld [$C030], a  ;load catus x postion for hit detection/deletion
+  cp a, 24  ;cactus width = 24 pixels (three tiles)
+  jr c, .dinoLegAnimation  ;a < 24
+  cp a, 100
+  jr nc, .dinoLegAnimation  ;a > 100
+
+  ld a, 1
+  ld [$C031], a
+
+  ;srl a
+  ;and a, %00011101
+  ;ld [$C030], a  ;load catus x postion for hit detection/deletion
+  xor a
   call PlaceRegularCactus
   jr .dinoLegAnimation
 
   .removeCactus
-  ld a, [$FF43]     ;wait until cactus out of view, then delete
-  ld b, a
-  ld a, [$C030]  ;cactus x
-  cp a, b
-  jr nz, .dinoLegAnimation
+  ;ld a, [$FF43]     ;wait until cactus out of view, then delete
+  ;cp a, 24  ;cactus width = 24 pixels (three tiles)
+  ;jr c, .dinoLegAnimation  ;a < 24
+  ;cp a, 100
+  ;jr nc, .dinoLegAnimation  ;a > 100
 
   ;a still set to cactus x location $C030
+  xor a
   call RemoveRegularCactus
 
   ld a, 1
@@ -824,8 +841,10 @@ Dropper:
 
   .resetCactusCounter
   ld a, [$C033]
+  ld h, a  ;for loadRandNumIntoDelayCounter
   ld d, a
   ld a, [$C034]
+  ld l, a  ;for loadRandNumIntoDelayCounter
   ld e, a
   inc de
   ld a, d
@@ -836,13 +855,17 @@ Dropper:
   ld [$C033], a
   ld a, e
   ld [$C034], a
-  jr .dinoLegAnimation
+  jr .loadRandNumIntoDelayCounter
 
   .clampRandomPick
   ld a, $C0
   ld [$C033], a
   xor a
   ld [$C034], a
+
+  .loadRandNumIntoDelayCounter
+  ld a, [hl]
+  ld [$C032], a
 
 .dinoLegAnimation
   ;if dino is on ground
