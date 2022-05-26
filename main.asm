@@ -905,7 +905,7 @@ Dropper:
     cp a, 0
     jr nz, .dinoUpdate  ;dino y < 104
 
-    ld a, 10
+    ld a, 15
     ld [$C021], a
 
     ;increment score every dino step
