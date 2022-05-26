@@ -142,12 +142,12 @@ dmaEnd:
     ld a, 15
     ld [$C021], a
 
-    ;cacti x locations
+    ;cacti x locations (using just as a bool for cactus out or naw)
     xor a
     ld [$C030], a
 
     ;place or remove cactus boolean
-    ld [$C031], a  ; 2 = place cactus, 0 = remove cactus, 1 = delay counter before place cactus
+    ld [$C031], a  ; 2 = check for valid place cactus, 0 = check for valid remove cactus, 1 = delay counter before place cactus
     ld [$C040], a  ;which one (0 or 2) to flip flop to
 
     ;cactus place counter delay
@@ -747,6 +747,7 @@ Dropper:
     call PlaceRegularCactus
     inc a
     ld [$C031], a
+    ld [$C030], a  ;cactus out (for hit detection)
     jr .scrollBackground
 
     .testForRemove
@@ -754,6 +755,7 @@ Dropper:
     jr nz, .scrollBackground
 
     xor a
+    ld [$C030], a   ;removed cactus, no cactus out (for hit detection)
     call RemoveRegularCactus
     inc a
     ld [$C031], a
@@ -958,6 +960,26 @@ Dropper:
     ld c, a  ;dino x
     call DinoMove
 
+    ;check if dino smacked into cactus
+.checkDinoCactus
+  ld a, [$D000]  ;dino y
+  cp a, $46
+  jr c, .checkDinoGround  ;only check for hitting cactus if dino low enough to hit one
+
+  ld a, [$FF43]  ;scroll x - less than $E2, greater than $0C
+  cp a, $EF
+  jr c, .checkDinoGround
+
+  ;cp a, $0C
+  ;jr nc, .checkDinoGround
+
+  ld a, [$C030]
+  cp a, 0  ;0 = no cactus out, 1 = cactus out
+  jr z, .checkDinoGround
+
+  ;dino hit cactus!
+  jr .hitCactus
+
     ;check if dino below ground, if so move him up and reset vel, and grav accel
     ;else if dino above do grav
 .checkDinoGround
@@ -1023,6 +1045,11 @@ Dropper:
     ld c, 20
     call DinoMove
     jp Dropper
+
+;pause game and wait for player to press a to restart
+.hitCactus
+
+jr .hitCactus
 
 .ballDropped
 
