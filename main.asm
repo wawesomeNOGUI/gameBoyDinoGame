@@ -316,7 +316,7 @@ ld hl, $D020
 
   ; Turn screen on, display background
   ;ld a, (LCDCF_ON | LCDCF_BG8000 | LCDCF_BGON )
-  ld a, (LCDCF_ON | LCDCF_BG9800  | LCDCF_BGON | LCDCF_OBJON) ;display sprites too
+  ld a, (LCDCF_ON | LCDCF_BG9800 | LCDCF_BGON | LCDCF_OBJON | LCDCF_BG8000) ;display sprites too
   ld [rLCDC], a
 
 jp GameLoop
@@ -1048,11 +1048,59 @@ Dropper:
 
 ;pause game and wait for player to press a to restart
 .hitCactus
+  .waitVBlankHitCactus
+      ld a, [rLY]
+      cp 144 ; Check if the LCD is in VBlank
+      jr c, .waitVBlankHitCactus
 
-jr .hitCactus
+  ld hl, $9883  ;prints kinda upper middle
+  ld de, RestartString
+  .copyString
+  ld a, [de]
+  ld [hli], a
+  inc de
+  and a ; Check if the byte we just copied is zero
+  jr nz, .copyString ; Continue if it's not
+
+  ld hl, $98C2  ;prints middle, underneath above string
+  ld de, RestOfString
+  .copyString2
+  ld a, [de]
+  ld [hli], a
+  inc de
+  and a ; Check if the byte we just copied is zero
+  jr nz, .copyString2 ; Continue if it's not
+
+.waitForRestart
+  ld a, %00010000   ;looking for action input
+  ;ld a, %00100000   ;looking for d-pad button input
+  ld [$FF00], a
+
+  ld a, [$FF00]  ;good to check joypad register multiple times
+  ld a, [$FF00]
+  ld a, [$FF00]
+
+  cp a, %11010111   ;looking for start or down
+  ;cp a, %11101101  ;looking for left press
+  ;cp a, %11101110   ;looking for right press
+  ;cp a, %11101011   ;looking for up press
+  ;cp a, %11011110    ;looking for  a
+  jr z, .ballDropped  ;if pressing a, restart game
+jr .waitForRestart
 
 .ballDropped
-
+  .waitVBlankCLRSCREEN
+      ld a, [rLY]
+      cp 144 ; Check if the LCD is in VBlank
+      jr c, .waitVBlankCLRSCREEN
+  ld hl, $9883
+  .clearBG
+  xor a
+  ld [hli], a
+  ld a, l
+  cp a, $CF
+  jr nz, .clearBG
+  
 SECTION "GameTiles", ROM0
 
 GameTiles:
@@ -1074,3 +1122,10 @@ SECTION "Font", ROM0
 FontTiles:
 INCBIN "font.chr"
 FontTilesEnd:
+
+SECTION "Restart Game String", ROM0
+RestartString:
+    DB "Press START", 0
+
+RestOfString:
+    DB "To Play Again", 0
