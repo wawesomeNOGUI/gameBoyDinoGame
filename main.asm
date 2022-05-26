@@ -907,7 +907,7 @@ Dropper:
     cp a, 0
     jr nz, .dinoUpdate  ;dino y < 104
 
-    ld a, 15
+    ld a, 13  ;originally delay = 15
     ld [$C021], a
 
     ;increment score every dino step
@@ -1100,7 +1100,7 @@ jr .waitForRestart
   ld a, l
   cp a, $CF
   jr nz, .clearBG
-  
+
 SECTION "GameTiles", ROM0
 
 GameTiles:
