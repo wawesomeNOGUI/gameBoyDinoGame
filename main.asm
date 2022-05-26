@@ -204,7 +204,7 @@ dmaEnd:
     jr nz, .clearOAM
 
   ;Init background and sprite color palletes
-  ;ld a, %11111111 ;for night mode invert pallete
+  ;ld a, %00111111 ;for night mode invert pallete
   ld a, %11000000
   ld [rBGP], a
 
@@ -419,7 +419,7 @@ IncScore:
   add a, %00010000
   ld [hl], a
   ld a, [rBGP]
-  xor a, %00111111  ;flip between %11000000 (day) and %11111111 (night)
+  xor a, %11111111  ;flip between %11000000 (day) and %00111111 (night)
   ld [rBGP], a
 
   ld a, [rOBP0]
@@ -689,14 +689,6 @@ GameLoop:
   ld d, 0
   ld e, 1
 Dropper:
-.waitVBlankDropper
-    ld a, [rLY]
-    cp 144 ; Check if the LCD is in VBlank
-    jr c, .waitVBlankDropper
-
-    ld a, $D0
-    call hRunDma
-
 .buttonDpadTesting
     ld a, %00010000   ;looking for action input
     ;ld a, %00100000   ;looking for d-pad button input
@@ -741,6 +733,34 @@ Dropper:
     ;jr z, .ballDropped ;if a pressed drop ball
 
 .update
+.waitVBlankDropper
+    ld a, [rLY]
+    cp 144 ; Check if the LCD is in VBlank
+    jr c, .waitVBlankDropper
+
+.testForPlaceOrRemove
+    ld a, [$C031]
+    cp a, 5
+    jr nz, .testForRemove
+
+    xor a
+    call PlaceRegularCactus
+    inc a
+    ld [$C031], a
+    jr .scrollBackground
+
+    .testForRemove
+    cp a, 10
+    jr nz, .scrollBackground
+
+    xor a
+    call RemoveRegularCactus
+    inc a
+    ld [$C031], a
+
+.scrollBackground
+  ld a, $D0
+  call hRunDma
   ;scroll background to scroll cacti and ground
   ;by adding scroll speed to Scroll X ?
   ;for now just inc Scroll X twice
@@ -813,17 +833,20 @@ Dropper:
   ld a, [$FF43]
   cp a, 24  ;cactus width = 24 pixels (three tiles)
   jr c, .dinoLegAnimation  ;a < 24
-  cp a, 100
-  jr nc, .dinoLegAnimation  ;a > 100
+  cp a, 30
+  jr nc, .dinoLegAnimation  ;a >= 100
 
-  ld a, 1
-  ld [$C031], a
+  ;ld a, 1
+  ;ld [$C031], a  ;set to remove cactus next, but first do cactus delay so doesn't instantly remove catcus
 
+  ;ld a, [$FF43]
   ;srl a
   ;and a, %00011101
   ;ld [$C030], a  ;load catus x postion for hit detection/deletion
-  xor a
-  call PlaceRegularCactus
+  ld a, 5  ;draw cactus next update loop
+  ld [$C031], a
+  ;xor a
+  ;call PlaceRegularCactus
   jr .dinoLegAnimation
 
   .removeCactus
@@ -833,12 +856,14 @@ Dropper:
   cp a, 100
   jr nc, .dinoLegAnimation  ;a > 100
 
-  ;a still set to cactus x location $C030
-  xor a
-  call RemoveRegularCactus
+  ld a, 10  ;remove cactus from tilemap next update loop
+  ld [$C031], a
+  ;ld a, [$C030]
+  ;xor a
+  ;call RemoveRegularCactus
 
-  ld a, 1
-  ld [$C031], a  ;set cactus place boolean to true (place cactus)
+  ;ld a, 1
+  ;ld [$C031], a  ;set cactus place boolean to 1, placeCatusDelay
 
   .resetCactusCounter
   ld a, [$C033]
@@ -880,7 +905,7 @@ Dropper:
     cp a, 0
     jr nz, .dinoUpdate  ;dino y < 104
 
-    ld a, 15
+    ld a, 10
     ld [$C021], a
 
     ;increment score every dino step
