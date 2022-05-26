@@ -833,7 +833,7 @@ Dropper:
   ld a, [$FF43]
   cp a, 24  ;cactus width = 24 pixels (three tiles)
   jr c, .dinoLegAnimation  ;a < 24
-  cp a, 30
+  cp a, 100
   jr nc, .dinoLegAnimation  ;a >= 100
 
   ;ld a, 1
