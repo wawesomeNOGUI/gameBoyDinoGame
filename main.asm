@@ -722,7 +722,7 @@ Dropper:
 
     ld a, $FF
     ld [$C006], a
-    ld a, $E2
+    ld a, $E2     ;originally $E2
     ld [$C007], a
 
     ;jr .buttonDpadTesting  ;keep decrementing velocity if up still held down
@@ -1037,7 +1037,7 @@ Dropper:
     ld [$C007], a
     ;reset grav accel
     ld [$C008], a
-    ld a, 5  ;can change starting accel to make dino jump shorter / higher
+    ld a, 4  ;can change starting accel to make dino jump (shorter / longer) shorter / higher
     ld [$C009], a
 
     ;reset dino y fixed point
