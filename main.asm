@@ -166,9 +166,12 @@ dmaEnd:
     call Load8BitIntToFixedPointInMem
 
     ;scroll speed
-    ld a, 1
-    ld hl, $C052
-    call Load8BitIntToFixedPointInMem
+    xor a
+    ld [$C052], a
+    ld a, %00001111
+    ld [$C053], a
+    ;ld hl, $C052
+    ;call Load8BitIntToFixedPointInMem
 
     ;store Binary Coded Decimal Score
     ;4 bytes
@@ -408,6 +411,7 @@ IncScore:
   dec b  ;if b == 1 then decrement will set b to 0
   jr nz, .noSpeedUp
   ld hl, $C053
+  inc [hl]
   inc [hl]
   .noSpeedUp
 
