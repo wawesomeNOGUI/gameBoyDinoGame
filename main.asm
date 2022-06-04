@@ -168,7 +168,7 @@ dmaEnd:
     ;scroll speed
     xor a
     ld [$C052], a
-    ld a, %00001111
+    ld a, %00010101
     ld [$C053], a
     ;ld hl, $C052
     ;call Load8BitIntToFixedPointInMem
@@ -411,7 +411,6 @@ IncScore:
   dec b  ;if b == 1 then decrement will set b to 0
   jr nz, .noSpeedUp
   ld hl, $C053
-  inc [hl]
   inc [hl]
   .noSpeedUp
 
