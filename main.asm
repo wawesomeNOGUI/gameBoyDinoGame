@@ -224,7 +224,7 @@ dmaEnd:
 ;load in value from random RAM spot (ram randomized on startup)
 ;query bits 0-4 for tiles $AC - $B2
 ld hl, $99A3  ;starting location for ground
-ld de, $C100  ;random RAM start
+ld de, $C200  ;random RAM start
 .groundPlace
 ld a, [de]
 inc de
@@ -1095,7 +1095,7 @@ jr .waitForRestart
   .waitVBlankCLRSCREEN
       ld a, [rLY]
       cp 144 ; Check if the LCD is in VBlank
-      jr c, .waitVBlankCLRSCREEN
+      jr nz, .waitVBlankCLRSCREEN
   ld hl, $9883
   .clearBG
   xor a
