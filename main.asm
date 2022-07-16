@@ -1056,6 +1056,12 @@ Dropper:
       cp 144 ; Check if the LCD is in VBlank
       jr c, .waitVBlankHitCactus
 
+  .dinoSurprised
+  ld a, $B5
+  ld [$FE06], a   ;change dino head to surprised
+  inc a
+  ld [$FE0A], a
+
   ld hl, $9883  ;prints kinda upper middle
   ld de, RestartString
   .copyString
@@ -1118,6 +1124,7 @@ INCBIN "groundSprites/ground3.2bpp"
 INCBIN "groundSprites/ground4.2bpp"
 INCBIN "groundSprites/ground5.2bpp"
 INCBIN "groundSprites/ground6.2bpp"
+INCBIN "dino24x24Surprised/dinoSurprised.2bpp"
 GameTilesEnd:
 
 SECTION "Font", ROM0
